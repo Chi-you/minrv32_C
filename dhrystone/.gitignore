@@ -1,0 +1,11 @@
+*.o
+*.elf
+*.d
+*.vcd
+*.vvp
+dhry.hex
+dhry.map
+timing.txt
+dhry.elf.S
+rvfi_mon.txt
+
