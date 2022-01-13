@@ -119,7 +119,17 @@ module comb_rv32 #(
 `endif
 
 );
+    wire [1:0] c_insn_field_opcode = insn[1:0];
+    wire [4:0] c_insn_field_rs1 = (insn[1:0] == 2'b00 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[9:7]}: insn[11:7];
+    wire [4:0] c_insn_field_rs2 = (insn[1:0] == 2'b00 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[4:2]}: insn[6:2];
+    wire [4:0] c_insn_field_rd  = (insn[1:0] == 2'b00) ? c_insn_field_rs2 : c_insn_field_rs1;
 
+    wire [31:0] immediate_7bit = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
+    wire signed [31:0] signed_immediate_6bit   = {insn[12], insn[6:2]};
+    wire [31:0] unsigned_immediate_6bit = {insn[12], insn[6:2]};
+    wire signed [31:0] immediate_9bit = {insn[12], insn[6:5], insn[2], insn[11:10] , insn[4:3], 1'b0};
+    wire [31:0] immediate_LWSP = {insn[3:2], insn[12], insn[6:4], 2'b0};
+    wire [31:0] immediate_SWSP = {insn[8:7], insn[12:9], 2'b0};
 
 	reg rs1_addr_valid;
 	reg rs2_addr_valid;
@@ -148,9 +158,9 @@ assign rd_request  = rd_addr_valid && ( rd_addr != 0 );
 	wire [4:0] insn_field_rs2    = insn[24:20];
 
 
-	assign rs1_addr = rs1_addr_valid ? insn_field_rs1 : 5'b0;
-	assign rs2_addr = rs2_addr_valid ? insn_field_rs2 : 5'b0;
-	assign rd_addr  = rd_addr_valid  ? insn_field_rd : 5'b0;
+	assign rs1_addr = rs1_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs1 : c_insn_field_rs1 : 5'b0;
+	assign rs2_addr = rs2_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs2 : c_insn_field_rs2 : 5'b0;
+	assign rd_addr  = rd_addr_valid  ? (c_insn_field_opcode == 2'b11) ? insn_field_rd  : c_insn_field_rd : 5'b0;
 
 	reg [31:0] rs1_value ;
 	reg [31:0] rs2_value ;
@@ -450,6 +460,8 @@ assign rd_request  = rd_addr_valid && ( rd_addr != 0 );
 					endcase
 					end
 			end
+            /*******************Compressed Instructions****************************/
+            /**********************************************************************/
 		end
 		if ( trap ) begin
 			pc_next = pc; // this will lock up the simulation, but prevents it doing stuff it shouldn't
