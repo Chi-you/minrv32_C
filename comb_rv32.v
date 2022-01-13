@@ -130,13 +130,13 @@ module comb_rv32 #(
     wire [4:0] c_insn_field_rs2 = (insn[1:0] == 2'b00 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[4:2]}: insn[6:2];
     wire [4:0] c_insn_field_rd  = (insn[1:0] == 2'b00) ? c_insn_field_rs2 : c_insn_field_rs1;
 
-    wire [31:0] immediate_7bit = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
-    wire signed [31:0] signed_immediate_6bit = {insn[12], insn[6:2]};
+    wire [31:0] immediate_7bit          = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
+    wire [31:0] immediate_9bit          = {{24{insn[12]}}, insn[6:5], insn[2], insn[11:10], insn[4:3], 1'b0};
+    wire [31:0] signed_immediate_6bit   = {{27{insn[12]}}, insn[6:2]};
     wire [31:0] unsigned_immediate_6bit = {insn[12], insn[6:2]};
-    wire signed [31:0] immediate_9bit = {insn[12], insn[6:5], insn[2], insn[11:10] , insn[4:3], 1'b0};
-    wire [31:0] immediate_LWSP = {insn[3:2], insn[12], insn[6:4], 2'b0};
-    wire [31:0] immediate_SWSP = {insn[8:7], insn[12:9], 2'b0};
-	wire [31:0] c_immediate_j = {{5{insn[12]}}, insn[8], insn[10], insn[9], insn[6], insn[7], insn[2], insn[11], insn[5:3], 1'b0};
+    wire [31:0] immediate_LWSP          = {insn[3:2], insn[12], insn[6:4], 2'b0};
+    wire [31:0] immediate_SWSP          = {insn[8:7], insn[12:9], 2'b0};
+	wire [31:0] c_immediate_j           = {{5{insn[12]}}, insn[8], insn[10], insn[9], insn[6], insn[7], insn[2], insn[11], insn[5:3], 1'b0};
 
 
 
@@ -145,9 +145,9 @@ module comb_rv32 #(
 	reg rd_addr_valid;
 
 
-assign rs1_request = rs1_addr_valid && ( rs1_addr != 0 );
-assign rs2_request = rs2_addr_valid && ( rs2_addr != 0 );
-assign rd_request  = rd_addr_valid && ( rd_addr != 0 );
+	assign rs1_request = rs1_addr_valid && ( rs1_addr != 0 );
+	assign rs2_request = rs2_addr_valid && ( rs2_addr != 0 );
+	assign rd_request  = rd_addr_valid && ( rd_addr != 0 );
 
 
 	assign insn_addr = { pc[31:1], 1'b0 };
