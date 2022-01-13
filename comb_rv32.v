@@ -473,40 +473,26 @@ module comb_rv32 #(
 			/*
 			    wire [1:0] c_insn_field_opcode   = insn[1:0];
 				wire [5:0] c_insn_field_funct6   = insn[15:10];
-				wire [2:0] c_insn_field_funct1_3 = {insn[12], insn[6:5]};
+				wire [2:0] c_insn_field_funct1_2 = {insn[12], insn[6:5]};
 				wire [2:0] c_insn_field_funct3   = insn[15:13];
 				wire [1:0] c_insn_field_funct2   = insn[11:10];
 				wire       c_insn_field_funct    = insn[12];
 			*/
 			if (c_insn_field_opcode == 2'b00) begin // C0
 				case (c_insn_field_funct3) 
-					3'b000: begin
+					3'b000: begin 
 						
 					end
-					3'b001: begin
-						
+					3'b010: begin // C.LW
+		
 					end
-					3'b010: begin
-						
-					end
-					3'b011: begin
-						
-					end
-					3'b100: begin
-						
-					end
-					3'b101: begin
-						
-					end
-					3'b110: begin
+					3'b110: begin 
 
-					end
-					3'b111: begin
-						
 					end
 					default: begin
 						
 					end
+				endcase
 			end
 			else if (c_insn_field_opcode == 2'b01) begin // C1
 				case (c_insn_field_funct3) 
@@ -516,7 +502,7 @@ module comb_rv32 #(
 					3'b001: begin
 						
 					end
-					3'b010: begin
+					3'b010: begin // C.LI
 						
 					end
 					3'b011: begin
@@ -524,11 +510,17 @@ module comb_rv32 #(
 					end
 					3'b100: begin
 						case (c_insn_field_funct2)
-							2'b00:
-							2'b01:
-							2'b10:
+							2'b00: begin
+								
+							end
+							2'b01: begin // C.SRAI
+								
+							end
+							2'b10:  begin
+								
+							end
 							2'b11: begin
-								case (c_insn_field_funct1_3)
+								case (c_insn_field_funct1_2)
 									3'b000: begin // C.SUB
 										
 									end
@@ -538,7 +530,7 @@ module comb_rv32 #(
 									3'b010: begin // C.OR
 										
 									end
-									3'b011: begin // C.AND
+									3'b011: begin // C.AND*
 										
 									end
 									default: begin
@@ -546,16 +538,18 @@ module comb_rv32 #(
 									end
 								endcase
 							end
-							default: 
+							default: begin
+								
+							end
 						endcase
 					end
-					3'b101: begin
+					3'b101: begin // C.J
 						
 					end
 					3'b110: begin
 
 					end
-					3'b111: begin
+					3'b111: begin // C.BNEZ
 						
 					end
 					default: begin
@@ -571,15 +565,15 @@ module comb_rv32 #(
 					3'b001: begin
 						
 					end
-					3'b010: begin
+					3'b010: begin // C.LWSP
 						
 					end
 					3'b011: begin
 						
 					end
 					3'b100: begin
-						case (c_insn_field_funct4)
-							1'b0: begin
+						case (c_insn_field_funct)
+							1'b0: begin // C.JR* or C.MV
 								
 							end 
 							1'b1: begin
@@ -590,18 +584,13 @@ module comb_rv32 #(
 							end
 						endcase
 					end
-					3'b101: begin
-						
-					end
 					3'b110: begin
 
 					end
-					3'b111: begin
-						
-					end
 					default: begin
 						
-					end					
+					end		
+				endcase			
 			end
             /**********************************************************************/
 		end
