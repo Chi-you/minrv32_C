@@ -528,7 +528,7 @@ assign rd_request  = rd_addr_valid && ( rd_addr != 0 );
 							2'b01:
 							2'b10:
 							2'b11: begin
-								case (c_insn_field_funct)
+								case (c_insn_field_funct1_3)
 									3'b000: begin // C.SUB
 										
 									end
