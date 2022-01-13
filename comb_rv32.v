@@ -197,12 +197,9 @@ assign rd_request  = rd_addr_valid && ( rd_addr != 0 );
 
 	reg is_alu_immediate;
 
-	wire [31:0] immediate_12bit = { {20{insn[31]}}, insn[31:20] }; 
-	wire [15:0] C_immediate_6bit = { {20{insn[31]}}, insn[31:20] }; 
+	wire [31:0] immediate_12bit = { {20{insn[31]}}, insn[31:20] };
 	wire [31:0] immediate_12bit_for_stores = { immediate_12bit[31:5], insn[11:7] };
 	wire [31:0] immediate_for_jal = { {12{insn[31]}}, insn[19:12], insn[20], insn[30:21], 1'b0 };
-	// nzimm: non zero immediate
-	wire [15:0] immediate_for_C_jal = { {5{insn[12]}}, insn[8], insn[10], insn[9], insn[6], insn[7], insn[2], insn[11], insn[5:3], 1'b0 };
 	wire [31:0] immediate_for_branches = { {20{insn[31]}}, insn[7], insn[ 30:25], insn[11:8], 1'b0 };
 
 	wire [31:0] pc_next_no_branch = insn_addr + 4;
@@ -453,8 +450,6 @@ assign rd_request  = rd_addr_valid && ( rd_addr != 0 );
 					endcase
 					end
 			end
-			// commpressed instruction
-			if(insn_field_opcode == )
 		end
 		if ( trap ) begin
 			pc_next = pc; // this will lock up the simulation, but prevents it doing stuff it shouldn't
