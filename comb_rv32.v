@@ -147,10 +147,29 @@ assign rd_request  = rd_addr_valid && ( rd_addr != 0 );
 	wire [4:0] insn_field_rs1    = insn[19:15];
 	wire [4:0] insn_field_rs2    = insn[24:20];
 
+    wire [4:0] c_insn_field_rs1 = 
+        (insn[1:0] == 2'b0 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[9:7]}: insn[11:7];
+    wire [4:0] c_insn_field_rs2 = 
+        (insn[1:0] == 2'b0 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[4:2]}: insn[6:2];
+    wire [4:0] c_insn_field_rd  = 
+        ({insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[9:7]}: insn[11:7];
 
-	assign rs1_addr = rs1_addr_valid ? insn_field_rs1 : 5'b0;
-	assign rs2_addr = rs2_addr_valid ? insn_field_rs2 : 5'b0;
-	assign rd_addr  = rd_addr_valid  ? insn_field_rd : 5'b0;
+	assign rs1_addr = rs1_addr_valid ? 
+        (insn[1:0] == 2'b11) ? 
+            insn_field_rs1 
+            : insn[11:7]
+        : 5'b0;
+	assign rs2_addr = rs2_addr_valid ? 
+        (insn[1:0] == 2'b11) ?
+            insn_field_rs2 
+            : insn[6:2]
+        : 5'b0;
+	assign rd_addr  = rd_addr_valid  ? 
+        (insn[1:0] == 2'b11) ?
+            insn_field_rd 
+            // Compressed
+            : ((insn[15:12] == 4'b1001 && insn[6:2] == 5'b0) ? 5'b1 : c_insn_field_rd)
+        : 5'b0;
 
 	reg [31:0] rs1_value ;
 	reg [31:0] rs2_value ;
@@ -450,6 +469,35 @@ assign rd_request  = rd_addr_valid && ( rd_addr != 0 );
 					endcase
 					end
 			end
+            // ----------Compressed------------------//
+            if (insn[1:0] == 2'b 10) begin
+                case (insn[15:13])
+                    3'b000: begin       //C.SLLI
+                        // For C.SLLI, insn[12] must be zero in RV32C
+                        insn_decode_valid = 1;
+                        rs1_addr_valid = 1 ; 
+                        rs2_addr_valid = 0;
+                        rd_addr_valid  = 1 ;
+                        rd_wdata = rs1_rdata << insn[6:2];
+                    end
+                endcase
+                if (insn[15:12] == 4'b 100_1 && insn[6:2] == 5'b00000)begin  // C.JALR
+                    insn_decode_valid = 1;
+                    rs1_addr_valid = 1;
+                    rd_addr_valid  = 1;
+                    rd_wdata = insn_addr + 2;
+                    pc_next = rs1_value & 32'hFFFF_FFFE;
+                    //gen_trap = |pc_next[0];
+                end else if (insn[15:12] == 4'b 100_1) begin  // C.ADD
+                    rs1_addr_valid = 1;
+                    rs2_addr_valid = 1;
+                    rd_addr_valid  = 1;
+                    insn_decode_valid = 1; // ADD
+                    rd_wdata = rs1_value + rs2_value;
+                    pc_next = insn_addr + 2;
+                end
+            end
+            // --------------------------------------//
 		end
 		if ( trap ) begin
 			pc_next = pc; // this will lock up the simulation, but prevents it doing stuff it shouldn't
