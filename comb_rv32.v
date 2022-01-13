@@ -119,17 +119,26 @@ module comb_rv32 #(
 `endif
 
 );
-    wire [1:0] c_insn_field_opcode = insn[1:0];
+	wire [1:0] c_insn_field_opcode   = insn[1:0];
+	wire [5:0] c_insn_field_funct6   = insn[15:10];
+	wire [2:0] c_insn_field_funct1_2 = {insn[12], insn[6:5]};
+	wire [2:0] c_insn_field_funct3   = insn[15:13];
+	wire [1:0] c_insn_field_funct2   = insn[11:10];
+	wire       c_insn_field_funct    = insn[12];
+
     wire [4:0] c_insn_field_rs1 = (insn[1:0] == 2'b00 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[9:7]}: insn[11:7];
     wire [4:0] c_insn_field_rs2 = (insn[1:0] == 2'b00 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[4:2]}: insn[6:2];
     wire [4:0] c_insn_field_rd  = (insn[1:0] == 2'b00) ? c_insn_field_rs2 : c_insn_field_rs1;
 
     wire [31:0] immediate_7bit = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
-    wire signed [31:0] signed_immediate_6bit   = {insn[12], insn[6:2]};
+    wire signed [31:0] signed_immediate_6bit = {insn[12], insn[6:2]};
     wire [31:0] unsigned_immediate_6bit = {insn[12], insn[6:2]};
     wire signed [31:0] immediate_9bit = {insn[12], insn[6:5], insn[2], insn[11:10] , insn[4:3], 1'b0};
     wire [31:0] immediate_LWSP = {insn[3:2], insn[12], insn[6:4], 2'b0};
     wire [31:0] immediate_SWSP = {insn[8:7], insn[12:9], 2'b0};
+	wire [31:0] c_immediate_j = {{5{insn[12]}}, insn[8], insn[10], insn[9], insn[6], insn[7], insn[2], insn[11], insn[5:3], 1'b0};
+
+
 
 	reg rs1_addr_valid;
 	reg rs2_addr_valid;
@@ -461,6 +470,139 @@ assign rd_request  = rd_addr_valid && ( rd_addr != 0 );
 					end
 			end
             /*******************Compressed Instructions****************************/
+			/*
+			    wire [1:0] c_insn_field_opcode   = insn[1:0];
+				wire [5:0] c_insn_field_funct6   = insn[15:10];
+				wire [2:0] c_insn_field_funct1_3 = {insn[12], insn[6:5]};
+				wire [2:0] c_insn_field_funct3   = insn[15:13];
+				wire [1:0] c_insn_field_funct2   = insn[11:10];
+				wire       c_insn_field_funct    = insn[12];
+			*/
+			if (c_insn_field_opcode == 2'b00) begin // C0
+				case (c_insn_field_funct3) 
+					3'b000: begin
+						
+					end
+					3'b001: begin
+						
+					end
+					3'b010: begin
+						
+					end
+					3'b011: begin
+						
+					end
+					3'b100: begin
+						
+					end
+					3'b101: begin
+						
+					end
+					3'b110: begin
+
+					end
+					3'b111: begin
+						
+					end
+					default: begin
+						
+					end
+			end
+			else if (c_insn_field_opcode == 2'b01) begin // C1
+				case (c_insn_field_funct3) 
+					3'b000: begin
+						
+					end
+					3'b001: begin
+						
+					end
+					3'b010: begin
+						
+					end
+					3'b011: begin
+						
+					end
+					3'b100: begin
+						case (c_insn_field_funct2)
+							2'b00:
+							2'b01:
+							2'b10:
+							2'b11: begin
+								case (c_insn_field_funct)
+									3'b000: begin // C.SUB
+										
+									end
+									3'b001: begin // C.XOR
+										
+									end
+									3'b010: begin // C.OR
+										
+									end
+									3'b011: begin // C.AND
+										
+									end
+									default: begin
+										
+									end
+								endcase
+							end
+							default: 
+						endcase
+					end
+					3'b101: begin
+						
+					end
+					3'b110: begin
+
+					end
+					3'b111: begin
+						
+					end
+					default: begin
+						
+					end
+				endcase
+			end
+			else if (c_insn_field_opcode == 2'b10) begin // C2
+				case (c_insn_field_funct3) 
+					3'b000: begin
+						
+					end
+					3'b001: begin
+						
+					end
+					3'b010: begin
+						
+					end
+					3'b011: begin
+						
+					end
+					3'b100: begin
+						case (c_insn_field_funct4)
+							1'b0: begin
+								
+							end 
+							1'b1: begin
+								
+							end
+							default: begin
+								
+							end
+						endcase
+					end
+					3'b101: begin
+						
+					end
+					3'b110: begin
+
+					end
+					3'b111: begin
+						
+					end
+					default: begin
+						
+					end					
+			end
             /**********************************************************************/
 		end
 		if ( trap ) begin
