@@ -167,9 +167,12 @@ module comb_rv32 #(
 	wire [4:0] insn_field_rs2    = insn[24:20];
 
 
+	// assign rs1_addr = rs1_addr_valid ?/* (c_insn_field_opcode == 2'b11) ? */insn_field_rs1/* : c_insn_field_rs1*/ : 5'b0;
+	// assign rs2_addr = rs2_addr_valid ?/* (c_insn_field_opcode == 2'b11) ? */insn_field_rs2/* : c_insn_field_rs2*/ : 5'b0;
+	// assign rd_addr  = rd_addr_valid  ?/* (c_insn_field_opcode == 2'b11) ? */insn_field_rd /* : c_insn_field_rd */ : 5'b0;
 	assign rs1_addr = rs1_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs1 : c_insn_field_rs1 : 5'b0;
 	assign rs2_addr = rs2_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs2 : c_insn_field_rs2 : 5'b0;
-	assign rd_addr  = rd_addr_valid  ? (c_insn_field_opcode == 2'b11) ? insn_field_rd  : c_insn_field_rd : 5'b0;
+	assign rd_addr  = rd_addr_valid  ? (c_insn_field_opcode == 2'b11) ? insn_field_rd  : c_insn_field_rd  : 5'b0;
 
 	reg [31:0] rs1_value ;
 	reg [31:0] rs2_value ;
@@ -186,8 +189,8 @@ module comb_rv32 #(
 	assign rvfi_rs2_addr   = `valid_data_or_x( rvfi_valid && rs2_addr != 0, rs2_addr  );
 	assign rvfi_rd_addr    = `valid_data_or_x( rvfi_valid, rd_addr   );
 
-	assign rvfi_rs1_rdata  = `valid_data_or_x( rvfi_valid && rs1_addr != 0, ( rs1_addr_valid )                          ? rs1_value : 32'b0 );
-	assign rvfi_rs2_rdata  = `valid_data_or_x( rvfi_valid && rs2_addr != 0, ( rs2_addr_valid )                          ? rs2_value : 32'b0 );
+	assign rvfi_rs1_rdata  = `valid_data_or_x( rvfi_valid && rs1_addr != 0, ( rs1_addr_valid ) ? rs1_value : 32'b0 );
+	assign rvfi_rs2_rdata  = `valid_data_or_x( rvfi_valid && rs2_addr != 0, ( rs2_addr_valid ) ? rs2_value : 32'b0 );
 	assign rvfi_rd_wdata   = `valid_data_or_x( rvfi_valid, ( rd_addr_valid && ( insn_field_rd != 0 ) ) ? rd_wdata  : 32'b0 );
 
 	// even the combo version might not complete in one cycle if mem_ready is held low...
@@ -216,13 +219,13 @@ module comb_rv32 #(
 
 	reg is_alu_immediate;
 
-	wire [31:0] immediate_12bit = { {20{insn[31]}}, insn[31:20] };
-	wire [31:0] immediate_12bit_for_stores = { immediate_12bit[31:5], insn[11:7] };
-	wire [31:0] immediate_for_jal = { {12{insn[31]}}, insn[19:12], insn[20], insn[30:21], 1'b0 };
-	wire [31:0] immediate_for_branches = { {20{insn[31]}}, insn[7], insn[ 30:25], insn[11:8], 1'b0 };
+	wire [31:0] immediate_12bit            = {{20{insn[31]}}, insn[31:20]};
+	wire [31:0] immediate_12bit_for_stores = {immediate_12bit[31:5], insn[11:7]};
+	wire [31:0] immediate_for_jal          = {{12{insn[31]}}, insn[19:12], insn[20], insn[30:21], 1'b0};
+	wire [31:0] immediate_for_branches     = {{20{insn[31]}}, insn[7], insn[ 30:25], insn[11:8], 1'b0};
 
 	wire [31:0] pc_next_no_branch = insn_addr + 4;
-	wire [31:0] pc_next_branch = ( insn_addr + immediate_for_branches ) & 32'hFFFF_FFFE;
+	wire [31:0] pc_next_branch    = ( insn_addr + immediate_for_branches ) & 32'hFFFF_FFFE;
 
 
 	wire cond_eq  = rs1_value == rs2_value ;
@@ -251,8 +254,8 @@ module comb_rv32 #(
 
 		is_alu_immediate = 0;
 
-		rs1_value = ( insn_field_rs1 == 0 ) ? 0 : rs1_rdata;
-		rs2_value = ( insn_field_rs2 == 0 ) ? 0 : rs2_rdata;  // may override this for immediate instructions
+		rs1_value = ( insn_field_rs1 == 0 && c_insn_field_rs1 == 0) ? 0 : rs1_rdata;
+		rs2_value = ( insn_field_rs2 == 0 && c_insn_field_rs2 == 0) ? 0 : rs2_rdata;  // may override this for immediate instructions
 
 		mem_valid = 0;
 		mem_instr = 0;
@@ -473,40 +476,32 @@ module comb_rv32 #(
 			/*
 			    wire [1:0] c_insn_field_opcode   = insn[1:0];
 				wire [5:0] c_insn_field_funct6   = insn[15:10];
-				wire [2:0] c_insn_field_funct1_3 = {insn[12], insn[6:5]};
+				wire [2:0] c_insn_field_funct1_2 = {insn[12], insn[6:5]};
 				wire [2:0] c_insn_field_funct3   = insn[15:13];
 				wire [1:0] c_insn_field_funct2   = insn[11:10];
 				wire       c_insn_field_funct    = insn[12];
 			*/
 			if (c_insn_field_opcode == 2'b00) begin // C0
 				case (c_insn_field_funct3) 
-					3'b000: begin
+					3'b000: begin 
 						
 					end
-					3'b001: begin
-						
+					3'b010: begin // C.LW
+						insn_decode_valid = 1;
+						mem_valid = 1;
+						mem_addr = rs1_value + immediate_7bit;
+						rs1_addr_valid = 1;
+						rd_addr_valid  = 1;  
+						mem_rmask = 4'b1111;
+						rd_wdata = mem_rdata;
 					end
-					3'b010: begin
-						
-					end
-					3'b011: begin
-						
-					end
-					3'b100: begin
-						
-					end
-					3'b101: begin
-						
-					end
-					3'b110: begin
+					3'b110: begin 
 
-					end
-					3'b111: begin
-						
 					end
 					default: begin
 						
 					end
+				endcase
 			end
 			else if (c_insn_field_opcode == 2'b01) begin // C1
 				case (c_insn_field_funct3) 
@@ -516,7 +511,7 @@ module comb_rv32 #(
 					3'b001: begin
 						
 					end
-					3'b010: begin
+					3'b010: begin // C.LI
 						
 					end
 					3'b011: begin
@@ -524,11 +519,17 @@ module comb_rv32 #(
 					end
 					3'b100: begin
 						case (c_insn_field_funct2)
-							2'b00:
-							2'b01:
-							2'b10:
+							2'b00: begin
+								
+							end
+							2'b01: begin // C.SRAI
+								
+							end
+							2'b10:  begin
+								
+							end
 							2'b11: begin
-								case (c_insn_field_funct1_3)
+								case (c_insn_field_funct1_2)
 									3'b000: begin // C.SUB
 										
 									end
@@ -538,7 +539,7 @@ module comb_rv32 #(
 									3'b010: begin // C.OR
 										
 									end
-									3'b011: begin // C.AND
+									3'b011: begin // C.AND*
 										
 									end
 									default: begin
@@ -546,16 +547,18 @@ module comb_rv32 #(
 									end
 								endcase
 							end
-							default: 
+							default: begin
+								
+							end
 						endcase
 					end
-					3'b101: begin
+					3'b101: begin // C.J
 						
 					end
 					3'b110: begin
 
 					end
-					3'b111: begin
+					3'b111: begin // C.BNEZ
 						
 					end
 					default: begin
@@ -571,37 +574,36 @@ module comb_rv32 #(
 					3'b001: begin
 						
 					end
-					3'b010: begin
+					3'b010: begin // C.LWSP
 						
 					end
 					3'b011: begin
 						
 					end
 					3'b100: begin
-						case (c_insn_field_funct4)
-							1'b0: begin
+						case (c_insn_field_funct)
+							1'b0: begin // C.JR* or C.MV
 								
 							end 
-							1'b1: begin
-								
+							1'b1: begin // C.ADD
+								rs1_addr_valid = 1;
+								rs2_addr_valid = 1;
+								rd_addr_valid = 1;
+								insn_decode_valid = 1;
+								rd_wdata = rs1_value + rs2_value;
 							end
 							default: begin
 								
 							end
 						endcase
 					end
-					3'b101: begin
-						
-					end
 					3'b110: begin
 
 					end
-					3'b111: begin
-						
-					end
 					default: begin
 						
-					end					
+					end		
+				endcase			
 			end
             /**********************************************************************/
 		end
