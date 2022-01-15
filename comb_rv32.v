@@ -173,6 +173,8 @@ module comb_rv32 #(
 
 	reg [31:0] rs1_value ;
 	reg [31:0] rs2_value ;
+	reg [31:0] c_rs1_value ;
+	reg [31:0] c_rs2_value ;
 
 //	reg [3:0] mem_wmask
 //	assign mem_wstrb = mem_wmask;
@@ -186,8 +188,8 @@ module comb_rv32 #(
 	assign rvfi_rs2_addr   = `valid_data_or_x( rvfi_valid && rs2_addr != 0, rs2_addr  );
 	assign rvfi_rd_addr    = `valid_data_or_x( rvfi_valid, rd_addr   );
 
-	assign rvfi_rs1_rdata  = `valid_data_or_x( rvfi_valid && rs1_addr != 0, ( rs1_addr_valid ) ? rs1_value : 32'b0 );
-	assign rvfi_rs2_rdata  = `valid_data_or_x( rvfi_valid && rs2_addr != 0, ( rs2_addr_valid ) ? rs2_value : 32'b0 );
+	assign rvfi_rs1_rdata  = `valid_data_or_x( rvfi_valid && rs1_addr != 0, ( rs1_addr_valid ) ? ((c_insn_field_opcode == 2'b11) ? rs1_value : c_rs1_value) : 32'b0 );
+	assign rvfi_rs2_rdata  = `valid_data_or_x( rvfi_valid && rs2_addr != 0, ( rs2_addr_valid ) ? ((c_insn_field_opcode == 2'b11) ? rs2_value : c_rs2_value) : 32'b0 );
 	assign rvfi_rd_wdata   = `valid_data_or_x( rvfi_valid, ( rd_addr_valid && ( insn_field_rd != 0 ) ) ? rd_wdata  : 32'b0 );
 
 	// even the combo version might not complete in one cycle if mem_ready is held low...
