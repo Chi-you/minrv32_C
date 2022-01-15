@@ -251,8 +251,10 @@ module comb_rv32 #(
 
 		is_alu_immediate = 0;
 
-		rs1_value = ( insn_field_rs1 == 0 && c_insn_field_rs1 == 0) ? 0 : rs1_rdata;
-		rs2_value = ( insn_field_rs2 == 0 && c_insn_field_rs2 == 0) ? 0 : rs2_rdata;  // may override this for immediate instructions
+		rs1_value   = (insn_field_rs1 == 0) ? 0 : rs1_rdata;
+		rs2_value   = (insn_field_rs2 == 0) ? 0 : rs2_rdata;  // may override this for immediate instructions
+		c_rs1_value = (c_insn_field_rs1 == 0) ? 0 : rs1_rdata;
+		c_rs2_value = (c_insn_field_rs2 == 0) ? 0 : rs2_rdata;  
 
 		mem_valid = 0;
 		mem_instr = 0;
@@ -486,8 +488,8 @@ module comb_rv32 #(
 					3'b010: begin // C.LW (FAIL)
 						insn_decode_valid = 1;
 						mem_valid = 1;
-						mem_addr = rs1_value + immediate_7bit;
 						rs1_addr_valid = 1;
+						mem_addr = c_rs1_value + immediate_7bit;
 						rd_addr_valid  = 1;  
 						mem_rmask = 4'b1111;
 						rd_wdata = mem_rdata;
@@ -543,7 +545,7 @@ module comb_rv32 #(
 										rs2_addr_valid = 1;
 										rd_addr_valid = 1;
 										insn_decode_valid = 1;
-										rd_wdata = rs1_value & rs2_value;
+										rd_wdata = c_rs1_value & c_rs2_value;
 									end
 									default: begin
 										
@@ -589,11 +591,7 @@ module comb_rv32 #(
 								
 							end 
 							1'b1: begin // C.ADD
-								rs1_addr_valid = 1;
-								rs2_addr_valid = 1;
-								rd_addr_valid = 1;
-								insn_decode_valid = 1;
-								rd_wdata = rs1_value + rs2_value;
+
 							end
 							default: begin
 								
