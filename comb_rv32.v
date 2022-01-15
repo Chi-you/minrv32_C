@@ -133,7 +133,7 @@ module comb_rv32 #(
     wire [31:0] immediate_7bit          = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
     wire [31:0] immediate_9bit          = {{24{insn[12]}}, insn[6:5], insn[2], insn[11:10], insn[4:3], 1'b0};
     wire [31:0] signed_immediate_6bit   = {{27{insn[12]}}, insn[6:2]};
-    wire [31:0] unsigned_immediate_6bit = {insn[12], insn[6:2]};
+    wire [31:0] unsigned_immediate_6bit = {26'b0, insn[12], insn[6:2]};
     wire [31:0] immediate_LWSP          = {insn[3:2], insn[12], insn[6:4], 2'b0};
     wire [31:0] immediate_SWSP          = {insn[8:7], insn[12:9], 2'b0};
 	wire [31:0] c_immediate_j           = {{5{insn[12]}}, insn[8], insn[10], insn[9], insn[6], insn[7], insn[2], insn[11], insn[5:3], 1'b0};
@@ -167,9 +167,6 @@ module comb_rv32 #(
 	wire [4:0] insn_field_rs2    = insn[24:20];
 
 
-	// assign rs1_addr = rs1_addr_valid ?/* (c_insn_field_opcode == 2'b11) ? */insn_field_rs1/* : c_insn_field_rs1*/ : 5'b0;
-	// assign rs2_addr = rs2_addr_valid ?/* (c_insn_field_opcode == 2'b11) ? */insn_field_rs2/* : c_insn_field_rs2*/ : 5'b0;
-	// assign rd_addr  = rd_addr_valid  ?/* (c_insn_field_opcode == 2'b11) ? */insn_field_rd /* : c_insn_field_rd */ : 5'b0;
 	assign rs1_addr = rs1_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs1 : c_insn_field_rs1 : 5'b0;
 	assign rs2_addr = rs2_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs2 : c_insn_field_rs2 : 5'b0;
 	assign rd_addr  = rd_addr_valid  ? (c_insn_field_opcode == 2'b11) ? insn_field_rd  : c_insn_field_rd  : 5'b0;
@@ -282,7 +279,7 @@ module comb_rv32 #(
 				rd_wdata = pc_next_no_branch;
 				pc_next = insn_addr + immediate_for_jal;
 				pc_next_valid = insn_complete;
-				gen_trap = |pc_next[1:0];
+				// gen_trap = |pc_next[1:0];
 			end
 			if (insn_field_opcode == 7'b 11_001_11) begin // JALR jump and link register
 				if (  insn_field_funct3 == 3'b 000 ) begin
@@ -291,7 +288,7 @@ module comb_rv32 #(
 					rd_addr_valid  = 1 ;
 					rd_wdata = pc_next_no_branch;
 					pc_next = ( rs1_value + immediate_12bit ) & 32'hFFFF_FFFE;
-					gen_trap = |pc_next[1:0];
+					// gen_trap = |pc_next[1:0];
 				end
 			end
 
@@ -310,7 +307,7 @@ module comb_rv32 #(
 						pc_next = pc_next_branch;
 					end
 				pc_next_valid = insn_complete;
-				gen_trap = |pc_next[1:0];
+				// gen_trap = |pc_next[1:0];
 			end
 
 			if (insn_field_opcode == 7'b 00_000_11) begin // LOAD
@@ -486,7 +483,7 @@ module comb_rv32 #(
 					3'b000: begin 
 						
 					end
-					3'b010: begin // C.LW
+					3'b010: begin // C.LW (FAIL)
 						insn_decode_valid = 1;
 						mem_valid = 1;
 						mem_addr = rs1_value + immediate_7bit;
@@ -511,8 +508,10 @@ module comb_rv32 #(
 					3'b001: begin
 						
 					end
-					3'b010: begin // C.LI
-						
+					3'b010: begin // C.LI (FAIL)
+						rd_addr_valid = 1;
+						insn_decode_valid = 1;
+						rd_wdata = signed_immediate_6bit;
 					end
 					3'b011: begin
 						
@@ -539,8 +538,12 @@ module comb_rv32 #(
 									3'b010: begin // C.OR
 										
 									end
-									3'b011: begin // C.AND*
-										
+									3'b011: begin // C.AND (FAIL)
+										rs1_addr_valid = 1;
+										rs2_addr_valid = 1;
+										rd_addr_valid = 1;
+										insn_decode_valid = 1;
+										rd_wdata = rs1_value & rs2_value;
 									end
 									default: begin
 										
