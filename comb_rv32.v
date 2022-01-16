@@ -514,7 +514,6 @@ module comb_rv32 #(
                         rd_addr_valid  = 1;
                         insn_decode_valid = 1;
                         rd_wdata = c_rs1_value + signed_immediate_6bit;
-                        pc_next = insn_addr + 2;
 					end
 					3'b001: begin 
 
@@ -524,8 +523,10 @@ module comb_rv32 #(
 						insn_decode_valid = 1;
 						rd_wdata = signed_immediate_6bit;
 					end
-					3'b011: begin
-						
+					3'b011: begin // C.LUI
+						rd_addr_valid = 1;
+                        insn_decode_valid = 1;
+                        rd_wdata = {signed_immediate_6bit[19:0], 12'b0};
 					end
 					3'b100: begin
 						case (c_insn_field_funct2)
