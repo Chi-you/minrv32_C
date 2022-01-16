@@ -600,8 +600,13 @@ module comb_rv32 #(
 			end
 			else if (c_insn_field_opcode == 2'b10) begin // C2
 				case (c_insn_field_funct3) 
-					3'b000: begin
-						
+					3'b000: begin // C.SLLI
+                        if (unsigned_immediate_6bit[5] == 0) begin
+                            rs1_addr_valid = 1;
+                            rd_addr_valid  = 1;
+                            insn_decode_valid = 1;  
+                            rd_wdata = c_rs1_value << unsigned_immediate_6bit[4:0];
+                        end
 					end
 					3'b001: begin
 						
