@@ -126,17 +126,17 @@ module comb_rv32 #(
 	wire [1:0] c_insn_field_funct2   = insn[11:10];
 	wire       c_insn_field_funct    = insn[12];
 
-    wire [4:0] c_insn_field_rs1 = (insn[1:0] == 2'b00 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[9:7]}: insn[11:7];
+    wire [4:0] c_insn_field_rs1 = (insn[1:0] == 2'b00 || ({insn[15], insn[1:0]} == 3'b101 && (insn[14:13] != 2'b01))) ? {2'b01, insn[9:7]} : insn[11:7];
     wire [4:0] c_insn_field_rs2 = (insn[1:0] == 2'b00 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[4:2]}: insn[6:2];
     wire [4:0] c_insn_field_rd  = (insn[1:0] == 2'b00) ? c_insn_field_rs2 : c_insn_field_rs1;
 
-    wire [31:0] immediate_7bit          = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
-    wire [31:0] immediate_9bit          = {{24{insn[12]}}, insn[6:5], insn[2], insn[11:10], insn[4:3], 1'b0};
-    wire [31:0] signed_immediate_6bit   = {{27{insn[12]}}, insn[6:2]};
-    wire [31:0] unsigned_immediate_6bit = {26'b0, insn[12], insn[6:2]};
-    wire [31:0] immediate_LWSP          = {insn[3:2], insn[12], insn[6:4], 2'b0};
-    wire [31:0] immediate_SWSP          = {insn[8:7], insn[12:9], 2'b0};
-	wire [31:0] c_immediate_j           = {{5{insn[12]}}, insn[8], insn[10], insn[9], insn[6], insn[7], insn[2], insn[11], insn[5:3], 1'b0};
+    wire [31:0] immediate_7bit           = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
+    wire [31:0] signed_immediate_6bit    = {{27{insn[12]}}, insn[6:2]};
+    wire [31:0] unsigned_immediate_6bit  = {26'b0, insn[12], insn[6:2]};
+    wire [31:0] immediate_LWSP           = {insn[3:2], insn[12], insn[6:4], 2'b0};
+    wire [31:0] immediate_SWSP           = {insn[8:7], insn[12:9], 2'b0};
+	wire [31:0] c_immediate_j            = {{21{insn[12]}}, insn[8], insn[10], insn[9], insn[6], insn[7], insn[2], insn[11], insn[5:3], 1'b0};
+    wire [31:0] immediate_for_branches_c = {{24{insn[12]}}, insn[6:5], insn[2], insn[11:10], insn[4:3], 1'b0};
 
 
 
@@ -224,11 +224,14 @@ module comb_rv32 #(
 	wire [31:0] immediate_for_branches     = {{20{insn[31]}}, insn[7], insn[ 30:25], insn[11:8], 1'b0};
 
 	wire [31:0] pc_next_no_branch = (c_insn_field_opcode == 2'b11) ? insn_addr + 4 : insn_addr + 2;
-	wire [31:0] pc_next_branch    = ( insn_addr + immediate_for_branches ) & 32'hFFFF_FFFE;
+	wire [31:0] pc_next_branch    = (insn_addr + immediate_for_branches)   & 32'hFFFF_FFFE;
+	wire [31:0] pc_next_branch_c  = (insn_addr + immediate_for_branches_c) & 32'hFFFF_FFFE;
 
 
-	wire cond_eq  = rs1_value == rs2_value ;
-	wire cond_neq = rs1_value != rs2_value ;
+	wire cond_eq   = rs1_value == rs2_value ;
+	wire cond_neq  = rs1_value != rs2_value ;
+	wire cond_eqz  = rs1_value == 0 ;
+	wire cond_neqz = rs1_value != 0 ;
 	wire cond_lt  = ( rs1_value ^ 32'h8000_0000 ) < ( rs2_value ^ 32'h8000_0000 ) ;
 	wire cond_ge  = !cond_lt;
 	wire cond_ltu = rs1_value < rs2_value;
@@ -491,8 +494,8 @@ module comb_rv32 #(
 						insn_decode_valid = 1;
 						mem_valid = 1;
 						rs1_addr_valid = 1;
-						mem_addr = c_rs1_value + immediate_7bit;
 						rd_addr_valid  = 1;  
+						mem_addr = c_rs1_value + immediate_7bit;
 						mem_rmask = 4'b1111;
 						rd_wdata = mem_rdata;
 					end
@@ -509,8 +512,8 @@ module comb_rv32 #(
 					3'b000: begin
 						
 					end
-					3'b001: begin
-						
+					3'b001: begin 
+
 					end
 					3'b010: begin // C.LI 
 						rd_addr_valid = 1;
@@ -526,7 +529,12 @@ module comb_rv32 #(
 								
 							end
 							2'b01: begin // C.SRAI
-								
+								if(unsigned_immediate_6bit[5] == 0) begin
+									rs1_addr_valid = 1;
+									rd_addr_valid  = 1;
+									insn_decode_valid = 1; 
+									rd_wdata = ({{32{rs1_value[31]}}, c_rs1_value} >> unsigned_immediate_6bit[4:0]);
+								end
 							end
 							2'b10:  begin
 								
@@ -560,13 +568,25 @@ module comb_rv32 #(
 						endcase
 					end
 					3'b101: begin // C.J
-						
+						insn_decode_valid = 1; 
+						pc_next = insn_addr + c_immediate_j;
+						pc_next_valid = insn_complete;
 					end
-					3'b110: begin
-
+					3'b110: begin // C.BEZ
+						insn_decode_valid = 1;
+						rs1_addr_valid = 1 ;
+						if(cond_eqz) begin
+							pc_next = pc_next_branch_c;
+						end
+						pc_next_valid = insn_complete;
 					end
-					3'b111: begin // C.BNEZ
-						
+					3'b111: begin // C.BNEZ 
+						insn_decode_valid = 1;
+						rs1_addr_valid = 1 ;
+						if(cond_neqz) begin
+							pc_next = pc_next_branch_c;
+						end
+						pc_next_valid = insn_complete;
 					end
 					default: begin
 						
@@ -589,10 +609,13 @@ module comb_rv32 #(
 					end
 					3'b100: begin
 						case (c_insn_field_funct)
-							1'b0: begin // C.JR* or C.MV
-								
+							1'b0: begin // C.JR or C.MV
+								rs1_addr_valid = 1;
+								insn_decode_valid = 1; 
+								pc_next = c_rs1_value & 32'hFFFF_FFFE;
+								pc_next_valid = insn_complete;
 							end 
-							1'b1: begin // C.ADD
+							1'b1: begin 
 
 							end
 							default: begin
