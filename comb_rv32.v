@@ -139,7 +139,6 @@ module comb_rv32 #(
     wire [31:0] immediate_for_branches_c = {{24{insn[12]}}, insn[6:5], insn[2], insn[11:10], insn[4:3], 1'b0};
 
 
-
 	reg rs1_addr_valid;
 	reg rs2_addr_valid;
 	reg rd_addr_valid;
@@ -510,7 +509,12 @@ module comb_rv32 #(
 			else if (c_insn_field_opcode == 2'b01) begin // C1
 				case (c_insn_field_funct3) 
 					3'b000: begin
-						
+						// C.ADDI
+                        rs1_addr_valid = 1;
+                        rd_addr_valid  = 1;
+                        insn_decode_valid = 1;
+                        rd_wdata = c_rs1_value + signed_immediate_6bit;
+                        pc_next = insn_addr + 2;
 					end
 					3'b001: begin 
 
