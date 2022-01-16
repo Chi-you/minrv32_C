@@ -625,8 +625,15 @@ module comb_rv32 #(
 								pc_next = c_rs1_value & 32'hFFFF_FFFE;
 								pc_next_valid = insn_complete;
 							end 
-							1'b1: begin 
-
+							1'b1: begin // C.JALR or C.ADD
+                                if (c_insn_field_rs2 == 0) begin
+                                end else begin
+                                    rs1_addr_valid = 1;
+                                    rs2_addr_valid = 1;
+                                    rd_addr_valid  = 1;
+                                    insn_decode_valid = 1;
+                                    rd_wdata = c_rs1_value + c_rs2_value;
+                                end
 							end
 							default: begin
 								
