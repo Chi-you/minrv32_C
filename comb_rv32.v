@@ -223,7 +223,7 @@ module comb_rv32 #(
 	wire [31:0] immediate_for_jal          = {{12{insn[31]}}, insn[19:12], insn[20], insn[30:21], 1'b0};
 	wire [31:0] immediate_for_branches     = {{20{insn[31]}}, insn[7], insn[ 30:25], insn[11:8], 1'b0};
 
-	wire [31:0] pc_next_no_branch = insn_addr + 4;
+	wire [31:0] pc_next_no_branch = (c_insn_field_opcode == 2'b11) ? insn_addr + 4 : insn_addr + 2;
 	wire [31:0] pc_next_branch    = ( insn_addr + immediate_for_branches ) & 32'hFFFF_FFFE;
 
 
@@ -512,7 +512,7 @@ module comb_rv32 #(
 					3'b001: begin
 						
 					end
-					3'b010: begin // C.LI (FAIL)
+					3'b010: begin // C.LI 
 						rd_addr_valid = 1;
 						insn_decode_valid = 1;
 						rd_wdata = signed_immediate_6bit;
@@ -542,7 +542,7 @@ module comb_rv32 #(
 									3'b010: begin // C.OR
 										
 									end
-									3'b011: begin // C.AND (FAIL)
+									3'b011: begin // C.AND
 										rs1_addr_valid = 1;
 										rs2_addr_valid = 1;
 										rd_addr_valid = 1;
