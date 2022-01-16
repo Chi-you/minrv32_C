@@ -139,7 +139,6 @@ module comb_rv32 #(
     wire [31:0] immediate_for_branches_c = {{24{insn[12]}}, insn[6:5], insn[2], insn[11:10], insn[4:3], 1'b0};
 
 
-
 	reg rs1_addr_valid;
 	reg rs2_addr_valid;
 	reg rd_addr_valid;
@@ -510,7 +509,11 @@ module comb_rv32 #(
 			else if (c_insn_field_opcode == 2'b01) begin // C1
 				case (c_insn_field_funct3) 
 					3'b000: begin
-						
+						// C.ADDI
+                        rs1_addr_valid = 1;
+                        rd_addr_valid  = 1;
+                        insn_decode_valid = 1;
+                        rd_wdata = c_rs1_value + signed_immediate_6bit;
 					end
 					3'b001: begin 
 
@@ -520,8 +523,10 @@ module comb_rv32 #(
 						insn_decode_valid = 1;
 						rd_wdata = signed_immediate_6bit;
 					end
-					3'b011: begin
-						
+					3'b011: begin // C.LUI
+						rd_addr_valid = 1;
+                        insn_decode_valid = 1;
+                        rd_wdata = {signed_immediate_6bit[19:0], 12'b0};
 					end
 					3'b100: begin
 						case (c_insn_field_funct2)
@@ -595,8 +600,13 @@ module comb_rv32 #(
 			end
 			else if (c_insn_field_opcode == 2'b10) begin // C2
 				case (c_insn_field_funct3) 
-					3'b000: begin
-						
+					3'b000: begin // C.SLLI
+                        if (unsigned_immediate_6bit[5] == 0) begin
+                            rs1_addr_valid = 1;
+                            rd_addr_valid  = 1;
+                            insn_decode_valid = 1;  
+                            rd_wdata = c_rs1_value << unsigned_immediate_6bit[4:0];
+                        end
 					end
 					3'b001: begin
 						
@@ -615,8 +625,15 @@ module comb_rv32 #(
 								pc_next = c_rs1_value & 32'hFFFF_FFFE;
 								pc_next_valid = insn_complete;
 							end 
-							1'b1: begin 
-
+							1'b1: begin // C.JALR or C.ADD
+                                if (c_insn_field_rs2 == 0) begin
+                                end else begin
+                                    rs1_addr_valid = 1;
+                                    rs2_addr_valid = 1;
+                                    rd_addr_valid  = 1;
+                                    insn_decode_valid = 1;
+                                    rd_wdata = c_rs1_value + c_rs2_value;
+                                end
 							end
 							default: begin
 								
