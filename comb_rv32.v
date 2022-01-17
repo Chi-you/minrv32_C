@@ -166,7 +166,7 @@ module comb_rv32 #(
 	wire [4:0] insn_field_rs2    = insn[24:20];
 
 
-	assign rs1_addr = rs1_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs1 : c_insn_field_rs1 : 5'b0;
+	assign rs1_addr = rs1_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs1 : ((insn[15] == 0 && insn[14:13] != 2'b00) ? 5'b00010 : c_insn_field_rs1) : 5'b0;
 	assign rs2_addr = rs2_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs2 : c_insn_field_rs2 : 5'b0;
 	assign rd_addr  = rd_addr_valid  ? (c_insn_field_opcode == 2'b11) ? insn_field_rd  : c_insn_field_rd  : 5'b0;
 
@@ -508,8 +508,7 @@ module comb_rv32 #(
 			end
 			else if (c_insn_field_opcode == 2'b01) begin // C1
 				case (c_insn_field_funct3) 
-					3'b000: begin
-						// C.ADDI
+					3'b000: begin // C.ADDI
                         rs1_addr_valid = 1;
                         rd_addr_valid  = 1;
                         insn_decode_valid = 1;
@@ -612,7 +611,13 @@ module comb_rv32 #(
 						
 					end
 					3'b010: begin // C.LWSP
-						
+						insn_decode_valid = 1;
+						mem_valid = 1;
+						rs1_addr_valid = 1;
+						rd_addr_valid  = 1;  
+						mem_addr = c_rs1_value + immediate_LWSP;
+						mem_rmask = 4'b1111;
+						rd_wdata = mem_rdata;
 					end
 					3'b011: begin
 						
