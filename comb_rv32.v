@@ -501,7 +501,7 @@ module comb_rv32 #(
                         insn_decode_valid = 1;
                         rd_wdata = c_rs1_value + immediate_ADDI4SPN;
 					end
-					3'b010: begin // C.LW (FAIL)
+					3'b010: begin // C.LW
 						insn_decode_valid = 1;
 						mem_valid = 1;
 						rs1_addr_valid = 1;
