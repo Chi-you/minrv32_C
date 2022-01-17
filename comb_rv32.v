@@ -510,7 +510,7 @@ module comb_rv32 #(
 						mem_rmask = 4'b1111;
 						rd_wdata = mem_rdata;
 					end
-					3'b110: begin 
+					3'b110: begin
 
 					end
 					default: begin
@@ -549,8 +549,11 @@ module comb_rv32 #(
 					end
 					3'b100: begin
 						case (c_insn_field_funct2)
-							2'b00: begin
-								
+							2'b00: begin // C.SRLI
+                                                              rs1_addr_valid = 1;
+                                                              rd_addr_valid  = 1;
+                                                              insn_decode_valid = 1;  
+                                                              rd_wdata = c_rs1_value >> {16'b0,unsigned_immediate_6bit[4:0]};
 							end
 							2'b01: begin // C.SRAI
 								if(unsigned_immediate_6bit[5] == 0) begin
@@ -560,19 +563,34 @@ module comb_rv32 #(
 									rd_wdata = ({{32{rs1_value[31]}}, c_rs1_value} >> unsigned_immediate_6bit[4:0]);
 								end
 							end
-							2'b10:  begin
-								
+							2'b10:  begin // C.ANDI
+							         rs1_addr_valid = 1;
+                                                               rd_addr_valid  = 1;
+                                                               insn_decode_valid = 1;
+                                                               rd_wdata = c_rs1_value & signed_immediate_6bit;
 							end
 							2'b11: begin
 								case (c_insn_field_funct1_2)
 									3'b000: begin // C.SUB
-										
+										rs1_addr_valid = 1;
+										rs2_addr_valid = 1;
+										rd_addr_valid = 1;
+										insn_decode_valid = 1;
+										rd_wdata = c_rs1_value - c_rs2_value;
 									end
 									3'b001: begin // C.XOR
-										
+										rs1_addr_valid = 1;
+										rs2_addr_valid = 1;
+										rd_addr_valid = 1;
+										insn_decode_valid = 1;
+										rd_wdata = c_rs1_value ^ c_rs2_value;
 									end
 									3'b010: begin // C.OR
-										
+										rs1_addr_valid = 1;
+										rs2_addr_valid = 1;
+										rd_addr_valid = 1;
+										insn_decode_valid = 1;
+										rd_wdata = c_rs1_value | c_rs2_value;
 									end
 									3'b011: begin // C.AND
 										rs1_addr_valid = 1;
@@ -646,10 +664,17 @@ module comb_rv32 #(
 					3'b100: begin
 						case (c_insn_field_funct)
 							1'b0: begin // C.JR or C.MV
-								rs1_addr_valid = 1;
-								insn_decode_valid = 1; 
-								pc_next = c_rs1_value & 32'hFFFF_FFFE;
-								pc_next_valid = insn_complete;
+                                                             if (insn[6:2] == 5'b00000) begin     // C.JR
+                                                                 rs1_addr_valid = 1;
+                                                                 insn_decode_valid = 1; 
+                                                                 pc_next = c_rs1_value & 32'hFFFF_FFFE;
+                                                                 pc_next_valid = insn_complete;
+                                                             end else begin	// C.MV
+                                                                 rs2_addr_valid = 1;
+                                                                 rd_addr_valid = 1;
+                                                                 insn_decode_valid = 1;
+                                                                 rd_wdata = c_rs2_value;
+                                                             end
 							end 
 							1'b1: begin // C.JALR or C.ADD
                                 if (c_insn_field_rs2 == 0) begin // C.JALR
