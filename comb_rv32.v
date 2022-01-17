@@ -130,13 +130,17 @@ module comb_rv32 #(
     wire [4:0] c_insn_field_rs2 = (insn[1:0] == 2'b00 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[4:2]}: insn[6:2];
     wire [4:0] c_insn_field_rd  = (insn[1:0] == 2'b00) ? c_insn_field_rs2 : c_insn_field_rs1;
 
-    wire [31:0] immediate_7bit           = {insn[5], insn[12:10], insn[6], 2'b0};
+    reg  [4:0] c_rs1_addr;
+    reg  [4:0] c_rd_addr;
+
+    wire [31:0] immediate_7bit           = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
     wire [31:0] signed_immediate_6bit    = {{27{insn[12]}}, insn[6:2]};
     wire [31:0] unsigned_immediate_6bit  = {26'b0, insn[12], insn[6:2]};
     wire [31:0] immediate_LWSP           = {insn[3:2], insn[12], insn[6:4], 2'b0};
     wire [31:0] immediate_SWSP           = {insn[8:7], insn[12:9], 2'b0};
 	wire [31:0] c_immediate_j            = {{21{insn[12]}}, insn[8], insn[10], insn[9], insn[6], insn[7], insn[2], insn[11], insn[5:3], 1'b0};
     wire [31:0] immediate_for_branches_c = {{24{insn[12]}}, insn[6:5], insn[2], insn[11:10], insn[4:3], 1'b0};
+    wire [31:0] immediate_ADDI16SP       = {{23{insn[12]}}, insn[4:3], insn[5], insn[2], insn[6], 4'b0};
 
 
 	reg rs1_addr_valid;
@@ -166,10 +170,9 @@ module comb_rv32 #(
 	wire [4:0] insn_field_rs2    = insn[24:20];
 
 
-	wire flag_sp = (insn[15] == 0 && insn[14:13] != 2'b00) || ();
-	assign rs1_addr = rs1_addr_valid ? ((c_insn_field_opcode == 2'b11) ? insn_field_rs1 : (flag_sp ? 5'b00010 : c_insn_field_rs1)) : 5'b0;
-	assign rs2_addr = rs2_addr_valid ? ((c_insn_field_opcode == 2'b11) ? insn_field_rs2 : c_insn_field_rs2) : 5'b0;
-	assign rd_addr  = rd_addr_valid  ? ((c_insn_field_opcode == 2'b11) ? insn_field_rd  : c_insn_field_rd)  : 5'b0;
+	assign rs1_addr = rs1_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs1 : c_rs1_addr : 5'b0;
+	assign rs2_addr = rs2_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs2 : c_insn_field_rs2 : 5'b0;
+	assign rd_addr  = rd_addr_valid  ? (c_insn_field_opcode == 2'b11) ? insn_field_rd  : c_rd_addr  : 5'b0;
 
 	reg [31:0] rs1_value ;
 	reg [31:0] rs2_value ;
@@ -259,7 +262,10 @@ module comb_rv32 #(
 		rs1_value   = (insn_field_rs1 == 0) ? 0 : rs1_rdata;
 		rs2_value   = (insn_field_rs2 == 0) ? 0 : rs2_rdata;  // may override this for immediate instructions
 		c_rs1_value = (c_insn_field_rs1 == 0) ? 0 : rs1_rdata;
-		c_rs2_value = (c_insn_field_rs2 == 0) ? 0 : rs2_rdata;  
+		c_rs2_value = (c_insn_field_rs2 == 0) ? 0 : rs2_rdata;
+
+        c_rs1_addr  = c_insn_field_rs1;
+        c_rd_addr   = c_insn_field_rd;
 
 		mem_valid = 0;
 		mem_instr = 0;
@@ -487,8 +493,7 @@ module comb_rv32 #(
 			*/
 			if (c_insn_field_opcode == 2'b00) begin // C0
 				case (c_insn_field_funct3) 
-					3'b000: begin 
-						
+					3'b000: begin // C.ADDI4SPN
 					end
 					3'b010: begin // C.LW (FAIL)
 						insn_decode_valid = 1;
@@ -523,10 +528,18 @@ module comb_rv32 #(
 						insn_decode_valid = 1;
 						rd_wdata = signed_immediate_6bit;
 					end
-					3'b011: begin // C.LUI
-						rd_addr_valid = 1;
-                        insn_decode_valid = 1;
-                        rd_wdata = {signed_immediate_6bit[19:0], 12'b0};
+					3'b011: begin // C.LUI or C.ADDI16SP
+                        if (c_insn_field_rd == 2) begin // C.ADDI16SP
+                            c_rd_addr = 5'b10;
+                            rs1_addr_valid = 1;
+                            rd_addr_valid = 1;
+                            insn_decode_valid = 1;
+                            rd_wdata = c_rs1_value + immediate_ADDI16SP;
+                        end else begin // C.LUI
+						    rd_addr_valid = 1;
+                            insn_decode_valid = 1;
+                            rd_wdata = {signed_immediate_6bit[19:0], 12'b0};
+                        end
 					end
 					3'b100: begin
 						case (c_insn_field_funct2)
@@ -632,8 +645,15 @@ module comb_rv32 #(
 								pc_next_valid = insn_complete;
 							end 
 							1'b1: begin // C.JALR or C.ADD
-                                if (c_insn_field_rs2 == 0) begin
-                                end else begin
+                                if (c_insn_field_rs2 == 0) begin // C.JALR
+                                    c_rd_addr = 5'b1;
+                                    rs1_addr_valid = 1;
+                                    rd_addr_valid = 1;
+                                    rd_wdata = pc_next_no_branch;
+                                    insn_decode_valid = 1;
+                                    pc_next = c_rs1_value & 32'hFFFF_FFFE;
+                                    pc_next_valid = insn_complete;
+                                end else begin                   // C.ADD
                                     rs1_addr_valid = 1;
                                     rs2_addr_valid = 1;
                                     rd_addr_valid  = 1;
