@@ -130,7 +130,7 @@ module comb_rv32 #(
     wire [4:0] c_insn_field_rs2 = (insn[1:0] == 2'b00 || {insn[15:13], insn[1:0]} == 5'b10001) ? {2'b01, insn[4:2]}: insn[6:2];
     wire [4:0] c_insn_field_rd  = (insn[1:0] == 2'b00) ? c_insn_field_rs2 : c_insn_field_rs1;
 
-    wire [31:0] immediate_7bit           = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
+    wire [31:0] immediate_7bit           = {insn[5], insn[12:10], insn[6], 2'b0};
     wire [31:0] signed_immediate_6bit    = {{27{insn[12]}}, insn[6:2]};
     wire [31:0] unsigned_immediate_6bit  = {26'b0, insn[12], insn[6:2]};
     wire [31:0] immediate_LWSP           = {insn[3:2], insn[12], insn[6:4], 2'b0};
@@ -166,9 +166,10 @@ module comb_rv32 #(
 	wire [4:0] insn_field_rs2    = insn[24:20];
 
 
-	assign rs1_addr = rs1_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs1 : ((insn[15] == 0 && insn[14:13] != 2'b00) ? 5'b00010 : c_insn_field_rs1) : 5'b0;
-	assign rs2_addr = rs2_addr_valid ? (c_insn_field_opcode == 2'b11) ? insn_field_rs2 : c_insn_field_rs2 : 5'b0;
-	assign rd_addr  = rd_addr_valid  ? (c_insn_field_opcode == 2'b11) ? insn_field_rd  : c_insn_field_rd  : 5'b0;
+	wire flag_sp = (insn[15] == 0 && insn[14:13] != 2'b00) || ();
+	assign rs1_addr = rs1_addr_valid ? ((c_insn_field_opcode == 2'b11) ? insn_field_rs1 : (flag_sp ? 5'b00010 : c_insn_field_rs1)) : 5'b0;
+	assign rs2_addr = rs2_addr_valid ? ((c_insn_field_opcode == 2'b11) ? insn_field_rs2 : c_insn_field_rs2) : 5'b0;
+	assign rd_addr  = rd_addr_valid  ? ((c_insn_field_opcode == 2'b11) ? insn_field_rd  : c_insn_field_rd)  : 5'b0;
 
 	reg [31:0] rs1_value ;
 	reg [31:0] rs2_value ;
