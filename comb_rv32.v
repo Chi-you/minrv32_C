@@ -620,10 +620,17 @@ module comb_rv32 #(
 					3'b100: begin
 						case (c_insn_field_funct)
 							1'b0: begin // C.JR or C.MV
-								rs1_addr_valid = 1;
-								insn_decode_valid = 1; 
-								pc_next = c_rs1_value & 32'hFFFF_FFFE;
-								pc_next_valid = insn_complete;
+                                                             if (insn[6:2] == 5'b00000) begin     // C.JR
+                                                                 rs1_addr_valid = 1;
+                                                                 insn_decode_valid = 1; 
+                                                                 pc_next = c_rs1_value & 32'hFFFF_FFFE;
+                                                                 pc_next_valid = insn_complete;
+                                                             end else begin	// C.MV
+                                                                 rs2_addr_valid = 1;
+                                                                 rd_addr_valid = 1;
+                                                                 insn_decode_valid = 1;
+                                                                 rd_wdata = c_rs2_value;
+                                                             end
 							end 
 							1'b1: begin // C.JALR or C.ADD
                                 if (c_insn_field_rs2 == 0) begin
