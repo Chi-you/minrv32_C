@@ -141,6 +141,7 @@ module comb_rv32 #(
 	wire [31:0] c_immediate_j            = {{21{insn[12]}}, insn[8], insn[10], insn[9], insn[6], insn[7], insn[2], insn[11], insn[5:3], 1'b0};
     wire [31:0] immediate_for_branches_c = {{24{insn[12]}}, insn[6:5], insn[2], insn[11:10], insn[4:3], 1'b0};
     wire [31:0] immediate_ADDI16SP       = {{23{insn[12]}}, insn[4:3], insn[5], insn[2], insn[6], 4'b0};
+    wire [31:0] immediate_ADDI4SPN       = {22'b0, insn[10:7], insn[12:11], insn[5], insn[6], 2'b0};
 
 
 	reg rs1_addr_valid;
@@ -193,7 +194,7 @@ module comb_rv32 #(
 
 	assign rvfi_rs1_rdata  = `valid_data_or_x( rvfi_valid && rs1_addr != 0, ( rs1_addr_valid ) ? ((c_insn_field_opcode == 2'b11) ? rs1_value : c_rs1_value) : 32'b0 );
 	assign rvfi_rs2_rdata  = `valid_data_or_x( rvfi_valid && rs2_addr != 0, ( rs2_addr_valid ) ? ((c_insn_field_opcode == 2'b11) ? rs2_value : c_rs2_value) : 32'b0 );
-	assign rvfi_rd_wdata   = `valid_data_or_x( rvfi_valid, ( rd_addr_valid && ( insn_field_rd != 0 ) ) ? rd_wdata  : 32'b0 );
+	assign rvfi_rd_wdata   = `valid_data_or_x( rvfi_valid, ( rd_addr_valid && ( rd_addr != 0 ) ) ? rd_wdata  : 32'b0 );
 
 	// even the combo version might not complete in one cycle if mem_ready is held low...
 	assign rvfi_valid      = insn_complete        ;
@@ -494,6 +495,11 @@ module comb_rv32 #(
 			if (c_insn_field_opcode == 2'b00) begin // C0
 				case (c_insn_field_funct3) 
 					3'b000: begin // C.ADDI4SPN
+                        c_rs1_addr = 5'b00010;
+                        rs1_addr_valid = 1;
+                        rd_addr_valid = 1;
+                        insn_decode_valid = 1;
+                        rd_wdata = c_rs1_value + immediate_ADDI4SPN;
 					end
 					3'b010: begin // C.LW (FAIL)
 						insn_decode_valid = 1;
