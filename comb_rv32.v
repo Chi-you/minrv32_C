@@ -544,8 +544,11 @@ module comb_rv32 #(
 									rd_wdata = ({{32{rs1_value[31]}}, c_rs1_value} >> unsigned_immediate_6bit[4:0]);
 								end
 							end
-							2'b10:  begin
-								
+							2'b10:  begin // C.ANDI
+							         rs1_addr_valid = 1;
+                                                               rd_addr_valid  = 1;
+                                                               insn_decode_valid = 1;
+                                                               rd_wdata = c_rs1_value & signed_immediate_6bit;
 							end
 							2'b11: begin
 								case (c_insn_field_funct1_2)
