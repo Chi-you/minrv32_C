@@ -498,7 +498,7 @@ module comb_rv32 #(
 						mem_rmask = 4'b1111;
 						rd_wdata = mem_rdata;
 					end
-					3'b110: begin 
+					3'b110: begin
 
 					end
 					default: begin
@@ -547,13 +547,25 @@ module comb_rv32 #(
 							2'b11: begin
 								case (c_insn_field_funct1_2)
 									3'b000: begin // C.SUB
-										
+										rs1_addr_valid = 1;
+										rs2_addr_valid = 1;
+										rd_addr_valid = 1;
+										insn_decode_valid = 1;
+										rd_wdata = c_rs1_value - c_rs2_value;
 									end
 									3'b001: begin // C.XOR
-										
+										rs1_addr_valid = 1;
+										rs2_addr_valid = 1;
+										rd_addr_valid = 1;
+										insn_decode_valid = 1;
+										rd_wdata = c_rs1_value ^ c_rs2_value;
 									end
 									3'b010: begin // C.OR
-										
+										rs1_addr_valid = 1;
+										rs2_addr_valid = 1;
+										rd_addr_valid = 1;
+										insn_decode_valid = 1;
+										rd_wdata = c_rs1_value | c_rs2_value;
 									end
 									3'b011: begin // C.AND
 										rs1_addr_valid = 1;
