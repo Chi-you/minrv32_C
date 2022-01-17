@@ -530,7 +530,7 @@ module comb_rv32 #(
 					end
 					3'b011: begin // C.LUI or C.ADDI16SP
                         if (c_insn_field_rd == 2) begin // C.ADDI16SP
-                            c_rd_addr = 5'b10;
+                            c_rd_addr = 5'b00010;
                             rs1_addr_valid = 1;
                             rd_addr_valid = 1;
                             insn_decode_valid = 1;
@@ -625,6 +625,7 @@ module comb_rv32 #(
 						
 					end
 					3'b010: begin // C.LWSP
+						c_rs1_addr = 5'b00010;
 						insn_decode_valid = 1;
 						mem_valid = 1;
 						rs1_addr_valid = 1;
@@ -646,7 +647,7 @@ module comb_rv32 #(
 							end 
 							1'b1: begin // C.JALR or C.ADD
                                 if (c_insn_field_rs2 == 0) begin // C.JALR
-                                    c_rd_addr = 5'b1;
+                                    c_rd_addr = 5'b00001;
                                     rs1_addr_valid = 1;
                                     rd_addr_valid = 1;
                                     rd_wdata = pc_next_no_branch;
