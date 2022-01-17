@@ -530,8 +530,11 @@ module comb_rv32 #(
 					end
 					3'b100: begin
 						case (c_insn_field_funct2)
-							2'b00: begin
-								
+							2'b00: begin // C.SRLI
+                                                              rs1_addr_valid = 1;
+                                                              rd_addr_valid  = 1;
+                                                              insn_decode_valid = 1;  
+                                                              rd_wdata = c_rs1_value >> {16'b0,unsigned_immediate_6bit[4:0]};
 							end
 							2'b01: begin // C.SRAI
 								if(unsigned_immediate_6bit[5] == 0) begin
