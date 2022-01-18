@@ -707,8 +707,13 @@ module comb_rv32 #(
 							end
 						endcase
 					end
-					3'b110: begin
-
+					3'b110: begin // C.SWSP
+						insn_decode_valid = 1;
+						mem_valid = 1;
+						rs1_addr_valid = 1;
+						rs2_addr_valid = 1;
+						mem_wdata = c_rs2_value;
+						mem_wstrb = 4'b1111;
 					end
 					default: begin
 						
