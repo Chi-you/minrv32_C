@@ -510,8 +510,13 @@ module comb_rv32 #(
 						mem_rmask = 4'b1111;
 						rd_wdata = mem_rdata;
 					end
-					3'b110: begin
-
+					3'b110: begin // C.SW				
+                                              insn_decode_valid = 1;
+						mem_valid = 1;
+						rs1_addr_valid = 1;
+						rs2_addr_valid = 1;
+						mem_wdata = c_rs2_value;
+						mem_wstrb = 4'b1111;
 					end
 					default: begin
 						
@@ -526,7 +531,7 @@ module comb_rv32 #(
                         insn_decode_valid = 1;
                         rd_wdata = c_rs1_value + signed_immediate_6bit;
 					end
-					3'b001: begin 
+					3'b001: begin
 
 					end
 					3'b010: begin // C.LI 
