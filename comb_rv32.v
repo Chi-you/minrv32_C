@@ -137,7 +137,7 @@ module comb_rv32 #(
     wire [31:0] unsigned_immediate_6bit  = {26'b0, insn[12], insn[6:2]};
     wire [31:0] immediate_LWSP           = {insn[3:2], insn[12], insn[6:4], 2'b0};
     wire [31:0] immediate_SWSP           = {insn[8:7], insn[12:9], 2'b0};
-    wire [31:0] immediate_c_LW           = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
+    wire [31:0] immediate_c_LW_SW        = {25'b0, insn[5], insn[12:10], insn[6], 2'b0};
     wire [31:0] immediate_ADDI4SPN       = {22'b0, insn[10:7], insn[12:11], insn[5], insn[6], 2'b0};
     wire [31:0] immediate_ADDI16SP       = {{23{insn[12]}}, insn[4:3], insn[5], insn[2], insn[6], 4'b0};
     wire [31:0] immediate_for_branches_c = {{24{insn[12]}}, insn[6:5], insn[2], insn[11:10], insn[4:3], 1'b0};
@@ -508,15 +508,15 @@ module comb_rv32 #(
 						rd_addr_valid  = 1;  
 						rd_wdata = mem_rdata;
 						mem_rmask = 4'b1111;
-						mem_addr = c_rs1_value + immediate_c_LW;
+						mem_addr = c_rs1_value + immediate_c_LW_SW;
 					end
 					3'b110: begin // C.SW				
-                                              insn_decode_valid = 1;
+                        insn_decode_valid = 1;
 						mem_valid = 1;
 						rs1_addr_valid = 1;
 						rs2_addr_valid = 1;
 						mem_wdata = c_rs2_value;
-						mem_addr = c_rs1_value + immediate_7bit;
+						mem_addr = c_rs1_value + immediate_c_LW_SW;
 						mem_wstrb = 4'b1111;
 					end
 					default: begin
@@ -540,11 +540,11 @@ module comb_rv32 #(
 					end
 					3'b001: begin // C.JAL
 						c_rd_addr = 5'b00001;
-                                              insn_decode_valid = 1;
-                                              rd_addr_valid  = 1;
-                                              rd_wdata = pc_next_no_branch;
-                                              pc_next = insn_addr + c_immediate_j;
-                                              pc_next_valid = insn_complete;
+						insn_decode_valid = 1;
+						rd_addr_valid  = 1;
+						rd_wdata = pc_next_no_branch;
+						pc_next = insn_addr + immediate_c_J;
+						pc_next_valid = insn_complete;
 					end
 					3'b010: begin // C.LI 
 						rd_addr_valid = 1;
