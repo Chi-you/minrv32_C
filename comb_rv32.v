@@ -516,6 +516,7 @@ module comb_rv32 #(
 						rs1_addr_valid = 1;
 						rs2_addr_valid = 1;
 						mem_wdata = c_rs2_value;
+						mem_addr = c_rs1_value + immediate_7bit;
 						mem_wstrb = 4'b1111;
 					end
 					default: begin
@@ -532,8 +533,9 @@ module comb_rv32 #(
                         rd_wdata = c_rs1_value + signed_immediate_6bit;
 					end
 					3'b001: begin // C.JAL
+						c_rd_addr = 5'b00001;
                                               insn_decode_valid = 1;
-                                              rd_addr_valid  = 1 ;
+                                              rd_addr_valid  = 1;
                                               rd_wdata = pc_next_no_branch;
                                               pc_next = insn_addr + c_immediate_j;
                                               pc_next_valid = insn_complete;
@@ -708,10 +710,12 @@ module comb_rv32 #(
 						endcase
 					end
 					3'b110: begin // C.SWSP
+						c_rs1_addr = 5'b00010;
 						insn_decode_valid = 1;
 						mem_valid = 1;
 						rs1_addr_valid = 1;
 						rs2_addr_valid = 1;
+						mem_addr = c_rs1_value + immediate_SWSP;
 						mem_wdata = c_rs2_value;
 						mem_wstrb = 4'b1111;
 					end
