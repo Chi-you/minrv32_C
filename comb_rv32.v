@@ -531,8 +531,12 @@ module comb_rv32 #(
                         insn_decode_valid = 1;
                         rd_wdata = c_rs1_value + signed_immediate_6bit;
 					end
-					3'b001: begin
-
+					3'b001: begin // C.JAL
+                                              insn_decode_valid = 1;
+                                              rd_addr_valid  = 1 ;
+                                              rd_wdata = pc_next_no_branch;
+                                              pc_next = insn_addr + c_immediate_j;
+                                              pc_next_valid = insn_complete;
 					end
 					3'b010: begin // C.LI 
 						rd_addr_valid = 1;
