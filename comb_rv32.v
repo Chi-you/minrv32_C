@@ -484,14 +484,6 @@ module comb_rv32 #(
 					end
 			end
             /*******************Compressed Instructions****************************/
-			/*
-			    wire [1:0] c_insn_field_opcode   = insn[1:0];
-				wire [5:0] c_insn_field_funct6   = insn[15:10];
-				wire [2:0] c_insn_field_funct1_2 = {insn[12], insn[6:5]};
-				wire [2:0] c_insn_field_funct3   = insn[15:13];
-				wire [1:0] c_insn_field_funct2   = insn[11:10];
-				wire       c_insn_field_funct    = insn[12];
-			*/
 			if (c_insn_field_opcode == 2'b00) begin // C0
 				case (c_insn_field_funct3) 
 					3'b000: begin // C.ADDI4SPN
@@ -660,9 +652,6 @@ module comb_rv32 #(
                             rd_wdata = c_rs1_value << unsigned_immediate_6bit[4:0];
                         end
 					end
-					3'b001: begin
-						
-					end
 					3'b010: begin // C.LWSP
 						c_rs1_addr = 5'b00010;
 						insn_decode_valid = 1;
@@ -672,9 +661,6 @@ module comb_rv32 #(
 						mem_addr = c_rs1_value + immediate_LWSP;
 						mem_rmask = 4'b1111;
 						rd_wdata = mem_rdata;
-					end
-					3'b011: begin
-						
 					end
 					3'b100: begin
 						case (c_insn_field_funct)
@@ -710,7 +696,6 @@ module comb_rv32 #(
 							end
 						endcase
 					end
-
 					3'b110: begin // C.SWSP
 						c_rs1_addr = 5'b00010;
 						insn_decode_valid = 1;
@@ -721,7 +706,6 @@ module comb_rv32 #(
 						mem_wdata = c_rs2_value;
 						mem_wstrb = 4'b1111;
 					end
-					
 					default: begin
 						c_rs1_addr = 0;
 						insn_decode_valid = 0;
